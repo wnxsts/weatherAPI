@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather API Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-top: 5px solid #007bff;
+        }
+        .map-container {
+            margin-top: 15px;
+            overflow: hidden;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            height: 150px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        button { cursor: pointer; padding: 10px; border-radius: 5px; border: none; background: #007bff; color: white; }
+        .delete-btn { background: #ff4d4d; color: white; width: 100%; margin-top: 10px; }
+        .section { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌤 Weather Dashboard</h1>
+
+        <div class="section">
+            <h3>Subscribe to Alerts</h3>
+            <div style="display: flex; gap: 10px;">
+                <input type="email" id="email" placeholder="Email">
+                <input type="text" id="subCity" placeholder="City">
+                <button onclick="subscribe()">Subscribe</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Add Favorite City</h3>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="cityInput" placeholder="City name...">
+                <button onclick="addCity()">Add City</button>
+            </div>
+        </div>
+
+        <div id="weatherList" class="weather-grid"></div>
+    </div>
+
+    <script>
+    async function loadWeather() {
+        try {
+            const response = await fetch('/api/weather'); 
+            const cities = await response.json();
+            const list = document.getElementById('weatherList');
+            
+            list.innerHTML = cities.map(w => `
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>${w.city}, ${w.country}</h3>
+                        <img src="http://openweathermap.org/img/wn/${w.icon}@2x.png" width="50">
+                    </div>
+                    <div class="info-body">
+                        <p style="font-size: 1.5em; font-weight: bold;">${w.temp}°C</p>
+                        <div class="info-row"><span>Status:</span> <b>${w.description}</b></div>
+                        <div class="info-row"><span>Humidity:</span> <b>${w.humidity}%</b></div>
+                        <div class="info-row"><span>Wind:</span> <b>${w.wind_speed} m/s</b></div>
+                    </div>
+
+                    <div class="map-container">
+                        <iframe 
+                            width="100%" height="150" frameborder="0" 
+                            src="https://maps.google.com/maps?q=${w.coords.lat},${w.coords.lon}&t=&z=13&ie=UTF8&iwloc=&output=embed">
+                        </iframe>
+                    </div>
+
+                    <button class="delete-btn" onclick="deleteCity('${w.city}')">Remove City</button>
+                </div>
+            `).join('');
+        } catch (err) { console.error(err); }
+    }
+
+    async function addCity() {
+        const city = document.getElementById('cityInput').value;
+        if (!city) return alert("Enter city name");
+        await fetch('/api/weather', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ city })
+        });
+        document.getElementById('cityInput').value = '';
+        loadWeather();
+    }
+
+    async function deleteCity(city) {
+        // ИСПРАВЛЕНО: убраны лишние \
+        await fetch(`/api/weather/${city}`, { method: 'DELETE' }); 
+        loadWeather();
+    }
+
+    async function subscribe() {
+        const email = document.getElementById('email').value;
+        const city = document.getElementById('subCity').value;
+        if (!email || !city) return alert("Fill all fields");
+        await fetch('/api/mail/subscribe', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ email, city }) 
+        });
+        alert('Subscribed!');
+    }
+
+    loadWeather();
+</script>
+</body>
+</html>
