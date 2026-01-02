@@ -48,7 +48,7 @@ weather-api/
 ├── server.js           # Main entry point (starts on Port 3000)
 └── package.json        # Manifest file with dependencies
 ---
-
+```
 ## 4. Features
 
 ### Weather Information
